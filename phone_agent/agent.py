@@ -1,6 +1,7 @@
 """Main PhoneAgent class for orchestrating phone automation."""
 
 import json
+import sys
 import traceback
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -11,6 +12,36 @@ from phone_agent.adb import get_current_app, get_screenshot
 from phone_agent.config import get_messages, get_system_prompt
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
+
+# Platform-specific keyboard input handling
+try:
+    import msvcrt  # Windows
+    _WINDOWS = True
+except ImportError:
+    import select  # Unix/Linux/Mac
+    _WINDOWS = False
+
+
+def _check_keyboard_interrupt() -> bool:
+    """
+    Check if user pressed 'q' key to interrupt execution.
+
+    Returns:
+        True if 'q' was pressed, False otherwise.
+    """
+    if _WINDOWS:
+        # Windows: use msvcrt
+        if msvcrt.kbhit():
+            key = msvcrt.getch()
+            if key in (b'q', b'Q'):
+                return True
+    else:
+        # Unix/Linux/Mac: use select
+        if select.select([sys.stdin], [], [], 0)[0]:
+            key = sys.stdin.read(1)
+            if key.lower() == 'q':
+                return True
+    return False
 
 
 @dataclass
@@ -94,6 +125,10 @@ class PhoneAgent:
         self._context = []
         self._step_count = 0
 
+        # Show interrupt hint
+        if self.agent_config.verbose:
+            print("\n💡 提示: 按 'q' 键可随时中断任务\n")
+
         # First step with user prompt
         result = self._execute_step(task, is_first=True)
 
@@ -102,6 +137,12 @@ class PhoneAgent:
 
         # Continue until finished or max steps reached
         while self._step_count < self.agent_config.max_steps:
+            # Check for keyboard interrupt
+            if _check_keyboard_interrupt():
+                if self.agent_config.verbose:
+                    print("\n⏸️  任务已被用户中断\n")
+                return "Task interrupted by user"
+
             result = self._execute_step(is_first=False)
 
             if result.finished:

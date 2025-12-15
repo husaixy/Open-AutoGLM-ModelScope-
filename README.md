@@ -9,6 +9,224 @@
     👋 加入我们的 <a href="resources/WECHAT.md" target="_blank">微信</a> 社区
 </p>
 
+> **📢 Fork 说明**
+>
+> 本项目是 [Open-AutoGLM](https://github.com/zai-org/Open-AutoGLM) 的分支版本，主要修改为支持魔搭平台（ModelScope）API，无需本地 GPU 即可使用。
+>
+> **与原版的主要区别：**
+> - ✅ 使用魔搭平台 API 替代本地 vLLM/SGLang 部署
+> - ✅ 无需 GPU - 在云端运行 AI 模型推理
+> - ✅ 简化的 Windows 部署流程
+> - ✅ 新增任务中断功能（按 'q' 键停止）
+> - ✅ 修复 Windows 中文编码问题
+>
+> **快速开始：** 查看 [QUICK_START.md](QUICK_START.md) 获取详细部署指南
+
+---
+
+## 🚀 完整部署教程
+
+### 第一步：获取魔搭平台 API Key（免费）
+
+本 Fork 版本使用魔搭平台的云端 API，无需本地 GPU。以下是详细获取步骤：
+
+#### 1.1 注册魔搭账号
+
+1. 打开浏览器，访问 [魔搭社区](https://modelscope.cn/)
+2. 点击右上角「登录/注册」按钮
+3. 使用以下任一方式注册：
+   - 手机号 + 验证码
+   - 微信扫码登录
+   - GitHub 账号登录
+
+#### 1.2 获取 API Token（重要！）
+
+1. **登录后**，点击右上角的头像
+2. 在下拉菜单中选择「个人中心」
+3. 在左侧菜单找到「访问令牌」或「API Token」选项
+4. 点击「创建新令牌」或「生成 Token」按钮
+5. **复制生成的 Token**（格式类似：`ms-xxxxxxxxxxxxxxxxxxxxxxxx`）
+   - ⚠️ **重要：** Token 只显示一次，请立即复制保存！
+   - 建议保存到安全的地方（如密码管理器）
+
+#### 1.3 确认模型可用
+
+1. 在魔搭平台搜索框输入 `AutoGLM-Phone-9B`
+2. 找到模型页面：[ZhipuAI/AutoGLM-Phone-9B](https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B)
+3. 确认模型状态为「可用」
+
+> 💡 **提示：** 魔搭平台提供免费额度，具体使用限制请查看平台说明。
+
+---
+
+### 第二步：配置项目
+
+有三种配置方式，推荐使用**方式 1**（最简单）：
+
+#### 方式 1：使用启动脚本（Windows 推荐）⭐
+
+**适用于：** Windows 用户，一键启动
+
+**步骤：**
+
+1. **复制配置模板：**
+   ```cmd
+   copy start_agent.example.bat start_agent.bat
+   ```
+
+2. **编辑配置文件：**
+   - 右键点击 `start_agent.bat`
+   - 选择「编辑」（或用记事本打开）
+   - 找到这一行：
+     ```batch
+     set PHONE_AGENT_API_KEY=your_modelscope_api_key_here
+     ```
+   - 将 `your_modelscope_api_key_here` 替换为你刚才复制的 Token：
+     ```batch
+     set PHONE_AGENT_API_KEY=ms-你的真实Token
+     ```
+   - 保存文件
+
+3. **完成！** 现在可以直接双击 `start_agent.bat` 运行
+
+#### 方式 2：使用 .env 文件（Linux/macOS 推荐）⭐
+
+**适用于：** Linux、macOS 或喜欢用环境变量的用户
+
+**步骤：**
+
+1. **复制环境变量模板：**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **编辑 .env 文件：**
+   ```bash
+   nano .env  # 或使用你喜欢的编辑器：vim、code 等
+   ```
+
+3. **填入你的配置：**
+   ```env
+   PHONE_AGENT_BASE_URL=https://api-inference.modelscope.cn/v1
+   PHONE_AGENT_API_KEY=ms-你的真实Token
+   PHONE_AGENT_MODEL=ZhipuAI/AutoGLM-Phone-9B
+   ```
+
+4. **保存文件**（nano: Ctrl+O 保存，Ctrl+X 退出）
+
+5. **运行 Agent：**
+   ```bash
+   python main.py "打开微信"
+   ```
+
+#### 方式 3：直接使用命令行参数
+
+**适用于：** 临时测试，或需要灵活切换配置
+
+```bash
+python main.py \
+    --base-url https://api-inference.modelscope.cn/v1 \
+    --apikey ms-你的真实Token \
+    --model ZhipuAI/AutoGLM-Phone-9B \
+    "打开微信"
+```
+
+> ⚠️ **安全提示：**
+> - `start_agent.bat` 和 `.env` 文件包含你的私人 API Key，已自动添加到 `.gitignore`
+> - 这些文件不会被 git 提交，请放心使用
+> - 不要将你的 API Key 分享给他人
+
+---
+
+### 第三步：运行项目
+
+配置完成后，有两种运行方式：
+
+#### 3.1 交互模式（推荐新手）
+
+**Windows：**
+```cmd
+start_agent.bat
+```
+
+**Linux/macOS：**
+```bash
+python main.py
+```
+
+然后在提示符下输入任务：
+```
+请输入任务 (输入 quit 退出): 打开微信
+请输入任务 (输入 quit 退出): 打开小红书搜索美食
+请输入任务 (输入 quit 退出): quit
+```
+
+**按 `q` 键可以随时中断正在执行的任务！**
+
+#### 3.2 单次任务模式（直接执行）
+
+**Windows：**
+```cmd
+start_agent.bat "打开淘宝搜索无线耳机"
+```
+
+**Linux/macOS：**
+```bash
+python main.py "打开美团，搜索附近的火锅店"
+```
+
+---
+
+### 第四步：测试是否配置成功
+
+运行以下简单任务测试：
+
+```bash
+# Windows
+start_agent.bat "打开设置"
+
+# Linux/macOS
+python main.py "打开设置"
+```
+
+**预期结果：**
+- 手机自动打开「设置」应用
+- 终端显示 AI 的思考过程和执行动作
+- 任务完成后显示 ✅ 标记
+
+**如果成功 → 恭喜！配置完成！🎉**
+
+**如果失败 → 查看下方的[常见问题](#常见问题)章节**
+
+---
+
+### 配置成功后，你可以尝试：
+
+```bash
+# 社交通讯
+python main.py "打开微信，给文件传输助手发送消息：测试成功"
+python main.py "打开QQ，查看最新消息"
+
+# 购物搜索
+python main.py "打开淘宝搜索无线耳机，价格300以内"
+python main.py "打开京东搜索笔记本电脑"
+
+# 生活服务
+python main.py "打开美团，搜索附近的咖啡店"
+python main.py "打开高德地图，导航到北京站"
+
+# 内容浏览
+python main.py "打开小红书搜索美食攻略"
+python main.py "打开抖音，刷几个视频"
+```
+
+> 💡 **提示：**
+> - 更详细的配置说明请查看 [CONFIG.md](CONFIG.md)
+> - 快速上手指南请查看 [QUICK_START.md](QUICK_START.md)
+> - 安全最佳实践请查看 [SECURITY.md](SECURITY.md)
+
+---
+
 ## 项目介绍
 
 Phone Agent 是一个基于 AutoGLM 构建的手机端智能助理框架，它能够以多模态方式理解手机屏幕内容，并通过自动化操作帮助用户完成任务。系统通过

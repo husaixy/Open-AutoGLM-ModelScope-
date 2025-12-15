@@ -57,17 +57,24 @@ class ModelClient:
         Raises:
             ValueError: If the response cannot be parsed.
         """
-        response = self.client.chat.completions.create(
-            messages=messages,
-            model=self.config.model_name,
-            max_tokens=self.config.max_tokens,
-            temperature=self.config.temperature,
-            top_p=self.config.top_p,
-            frequency_penalty=self.config.frequency_penalty,
-            extra_body=self.config.extra_body,
-        )
+        try:
+            # Use non-streaming for better compatibility with ModelScope API
+            response = self.client.chat.completions.create(
+                messages=messages,
+                model=self.config.model_name,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+                frequency_penalty=self.config.frequency_penalty,
+                extra_body=self.config.extra_body,
+                stream=False,
+            )
 
-        raw_content = response.choices[0].message.content
+            # Get response content
+            raw_content = response.choices[0].message.content
+
+        except Exception as e:
+            raise ValueError(f"Model request failed: {e}") from e
 
         # Parse thinking and action from response
         thinking, action = self._parse_response(raw_content)

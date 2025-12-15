@@ -75,6 +75,8 @@ class ADBConnection:
                 [self.adb_path, "connect", address],
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='ignore',
                 timeout=timeout,
             )
 
@@ -107,7 +109,7 @@ class ADBConnection:
             if address:
                 cmd.append(address)
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=5)
 
             output = result.stdout + result.stderr
             return True, output.strip() or "Disconnected"
@@ -127,6 +129,8 @@ class ADBConnection:
                 [self.adb_path, "devices", "-l"],
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='ignore',
                 timeout=5,
             )
 

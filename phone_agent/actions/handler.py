@@ -281,13 +281,48 @@ def parse_action(response: str) -> dict[str, Any]:
     try:
         # Try to evaluate as Python dict/function call
         response = response.strip()
+
+        # Extract the last line containing do() or finish() if there are multiple lines
+        lines = response.split('\n')
+        action_line = None
+        for line in reversed(lines):
+            line = line.strip()
+            if line.startswith("do(") or line.startswith("finish("):
+                action_line = line
+                break
+
+        # If we found an action line, use it; otherwise use the original response
+        if action_line:
+            response = action_line
+
         if response.startswith("do"):
             action = eval(response)
         elif response.startswith("finish"):
-            action = {
-                "_metadata": "finish",
-                "message": response.replace("finish(message=", "")[1:-2],
-            }
+            # Use eval to properly parse finish() call
+            try:
+                action = eval(response)
+            except:
+                # Fallback: manually extract message if eval fails
+                # Handle format: finish(message="xxx")
+                if 'message=' in response:
+                    msg_start = response.find('message=') + 8
+                    msg_content = response[msg_start:].strip()
+                    # Remove quotes and closing parenthesis
+                    if msg_content.startswith('"') or msg_content.startswith("'"):
+                        quote_char = msg_content[0]
+                        # Find the matching closing quote
+                        end_quote = msg_content.rfind(quote_char)
+                        if end_quote > 0:
+                            msg_content = msg_content[1:end_quote]
+                    action = {
+                        "_metadata": "finish",
+                        "message": msg_content,
+                    }
+                else:
+                    action = {
+                        "_metadata": "finish",
+                        "message": response,
+                    }
         else:
             raise ValueError(f"Failed to parse action: {response}")
         return action
